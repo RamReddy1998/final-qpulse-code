@@ -14,6 +14,7 @@ export function BatchManagement() {
   const [newBatchCertId, setNewBatchCertId] = useState('');
   const [newBatchStartTime, setNewBatchStartTime] = useState('');
   const [newBatchEndTime, setNewBatchEndTime] = useState('');
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [addUsername, setAddUsername] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -60,6 +61,53 @@ export function BatchManagement() {
       const error = err as { response?: { data?: { message?: string } } };
       setError(error.response?.data?.message || 'Failed to create batch');
     }
+  };
+
+  const handleUpdateBatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBatch) return;
+    setError('');
+    try {
+      await adminService.updateBatch(editingBatch.id, {
+        batchName: newBatchName,
+        certificationId: newBatchCertId,
+        startTime: newBatchStartTime || undefined,
+        endTime: newBatchEndTime || undefined,
+      });
+      setEditingBatch(null);
+      setNewBatchName('');
+      setNewBatchCertId('');
+      setNewBatchStartTime('');
+      setNewBatchEndTime('');
+      loadData();
+      setMessage('Batch updated successfully');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Failed to update batch');
+    }
+  };
+
+  const handleDeleteBatch = async (batchId: string) => {
+    if (!window.confirm('Are you sure you want to delete this batch?')) return;
+    try {
+      await adminService.deleteBatch(batchId);
+      if (selectedBatch?.id === batchId) setSelectedBatch(null);
+      loadData();
+      setMessage('Batch deleted successfully');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error('Failed to delete batch:', err);
+      setError('Failed to delete batch');
+    }
+  };
+
+  const openEditModal = (batch: Batch) => {
+    setEditingBatch(batch);
+    setNewBatchName(batch.batchName);
+    setNewBatchCertId(batch.certificationId);
+    setNewBatchStartTime(batch.startTime ? new Date(batch.startTime).toISOString().split('T')[0] : '');
+    setNewBatchEndTime(batch.endTime ? new Date(batch.endTime).toISOString().split('T')[0] : '');
   };
 
 
@@ -183,6 +231,66 @@ export function BatchManagement() {
         </div>
       )}
 
+      {/* Edit Modal */}
+      {editingBatch && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Batch</h2>
+            <form onSubmit={handleUpdateBatch} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Batch Name</label>
+                <input
+                  type="text"
+                  value={newBatchName}
+                  onChange={(e) => setNewBatchName(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., Batch 2024 - GCP ACE"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certification</label>
+                <select
+                  value={newBatchCertId}
+                  onChange={(e) => setNewBatchCertId(e.target.value)}
+                  className="input-field"
+                  required
+                >
+                  <option value="">Select certification</option>
+                  {certifications.map((cert) => (
+                    <option key={cert.id} value={cert.id}>{cert.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={newBatchStartTime}
+                    onChange={(e) => setNewBatchStartTime(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={newBatchEndTime}
+                    onChange={(e) => setNewBatchEndTime(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setEditingBatch(null)} className="btn-secondary flex-1">Cancel</button>
+                <button type="submit" className="btn-primary flex-1">Update</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Batch List */}
         <div className="space-y-3">
@@ -193,24 +301,42 @@ export function BatchManagement() {
             </div>
           ) : (
             batches.map((batch) => (
-              <button
+              <div
                 key={batch.id}
-                onClick={() => handleSelectBatch(batch.id)}
-                className={`card w-full text-left hover:shadow-md transition-shadow ${
+                className={`card w-full p-0 overflow-hidden hover:shadow-md transition-shadow ${
                   selectedBatch?.id === batch.id ? 'ring-2 ring-primary-500' : ''
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">{batch.batchName}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{batch.certification.name}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {batch._count?.participants || 0} participants
-                    </p>
+                <button
+                  onClick={() => handleSelectBatch(batch.id)}
+                  className="w-full text-left p-4 focus:outline-none"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-white">{batch.batchName}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{batch.certification.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        {batch._count?.participants || 0} participants
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </button>
+                <div className="flex border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                  <button
+                    onClick={() => openEditModal(batch)}
+                    className="flex-1 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-r border-gray-100 dark:border-gray-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBatch(batch.id)}
+                    className="flex-1 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    Delete
+                  </button>
                 </div>
-              </button>
+              </div>
             ))
           )}
         </div>

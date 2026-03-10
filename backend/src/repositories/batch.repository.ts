@@ -71,4 +71,59 @@ export class BatchRepository {
     });
     return !!participant;
   }
+
+  async update(id: string, data: { batchName?: string; certificationId?: string; startTime?: Date; endTime?: Date }) {
+    return prisma.batch.update({
+      where: { id },
+      data,
+      include: { certification: { select: { name: true } } },
+    });
+  }
+
+  async delete(id: string) {
+    return prisma.batch.delete({
+      where: { id },
+    });
+  }
+
+  async findExpiredBatches(now: Date) {
+    return prisma.batch.findMany({
+      where: {
+        endTime: {
+          lt: now,
+        },
+      },
+    });
+  }
+
+  async findActiveBatchesByUser(userId: string) {
+    const now = new Date();
+    const participations = await prisma.batchParticipant.findMany({
+      where: { 
+        userId,
+        batch: {
+          OR: [
+            { endTime: null },
+            { endTime: { gte: now } }
+          ]
+        }
+      },
+      include: {
+        batch: {
+          include: { certification: { select: { name: true } } },
+        },
+      },
+    });
+    return participations.map((p) => p.batch);
+  }
+
+  async deleteMany(ids: string[]) {
+    return prisma.batch.deleteMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+    });
+  }
 }

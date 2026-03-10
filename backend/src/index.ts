@@ -6,6 +6,9 @@ import { config } from './config';
 import logger from './config/logger';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { AdminService } from './services/admin.service';
+
+const adminService = new AdminService();
 
 const app = express();
 
@@ -45,6 +48,18 @@ app.listen(config.port, () => {
     environment: config.nodeEnv,
     aiProvider: config.ai.provider,
   });
+
+  // Setup periodic batch cleanup every 24 hours
+  setInterval(async () => {
+    try {
+      const count = await adminService.cleanupExpiredBatches();
+      if (count > 0) {
+        logger.info(`Periodic cleanup: ${count} expired batches removed`);
+      }
+    } catch (error) {
+      logger.error('Error during periodic batch cleanup:', error);
+    }
+  }, 24 * 60 * 60 * 1000); // 24 hours
 });
 
 export default app;

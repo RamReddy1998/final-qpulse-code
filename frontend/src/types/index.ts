@@ -155,6 +155,7 @@ export interface AdminDashboard {
   totalMocks: number;
   currentMonthBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; startTime: string | null; endTime: string | null; createdAt: string }>;
   nextMonthBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; startTime: string | null; endTime: string | null; createdAt: string }>;
+  completedBatches?: Array<{ id: string; batchName: string; certificationName: string; participantCount: number; startTime: string | null; endTime: string | null; createdAt: string }>;
 }
 
 export interface LearnerAnalytics {
@@ -165,6 +166,7 @@ export interface LearnerAnalytics {
   mockTestCount: number;
   readinessScore: number;
   readinessStatus: string;
+  readinessHistory?: Array<{ score: number; date: string }>;
   topicAccuracy: TopicAccuracy[];
   weakTopics: Array<{ topic: string; count: number; totalMistakes: number }>;
   batches?: Array<{ id: string; batchName: string; certificationName: string }>;

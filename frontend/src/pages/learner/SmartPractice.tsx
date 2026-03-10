@@ -330,9 +330,9 @@ export function SmartPractice() {
   const question = questions[0] || null;
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 py-6">
+    <div className="max-w-[1700px] mx-auto px-4 py-2">
       {/* Header with stats and filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Smart Practice</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
@@ -416,19 +416,21 @@ export function SmartPractice() {
       )}
 
       {/* Pagination Bar */}
-      {renderPagination()}
+      <div className="flex-shrink-0">
+        {renderPagination()}
+      </div>
 
       {/* Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start pb-8">
         {/* Left: Question */}
-        <div className="space-y-6 min-w-0">
-          <div className="card p-4 md:p-8 border border-gray-100 dark:border-gray-800 min-h-[400px] lg:min-h-[600px] flex flex-col overflow-hidden">
+        <div className="min-w-0">
+          <div className="card p-4 md:p-6 border border-gray-100 dark:border-gray-800">
             {loadingQuestion ? (
-              <div className="flex-1 flex items-center justify-center py-20">
+              <div className="flex items-center justify-center py-20">
                 <LoadingSpinner message="Loading question..." />
               </div>
             ) : error ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-4 md:p-8">
+              <div className="flex flex-col items-center justify-center text-center p-4 md:p-8">
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-6">
                   <XCircle className="h-8 w-8 md:h-10 md:w-10 text-red-500" />
                 </div>
@@ -444,7 +446,7 @@ export function SmartPractice() {
                 )}
               </div>
             ) : question ? (
-              <div className="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar pr-1">
+              <div className="flex flex-col">
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                   <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600">
                     <BookOpen className="h-5 w-5" />
@@ -458,8 +460,8 @@ export function SmartPractice() {
                   </span>
                 </div>
 
-                <div className="flex-1">
-                  <p className="text-lg md:text-xl font-medium text-gray-800 dark:text-white mb-6 md:mb-8 leading-relaxed">
+                <div className="mb-4">
+                  <p className="text-lg md:text-xl font-medium text-gray-800 dark:text-white mb-4 leading-relaxed">
                     {question.questionText}
                   </p>
 
@@ -483,7 +485,7 @@ export function SmartPractice() {
                           key={key}
                           onClick={() => !submitted && setSelectedAnswer(key)}
                           disabled={submitted}
-                          className={`w-full text-left p-4 md:p-5 rounded-xl border-2 transition-all flex items-start gap-3 md:gap-4 group ${optionClass}`}
+                          className={`w-full text-left p-3 md:p-4 rounded-xl border-2 transition-all flex items-start gap-2 md:gap-3 group ${optionClass}`}
                         >
                           <span className={`flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl border-2 flex items-center justify-center text-xs md:text-sm font-bold transition-all ${
                             submitted && key === correctAnswer
@@ -504,7 +506,7 @@ export function SmartPractice() {
                 </div>
 
                 {/* Actions */}
-                <div className="mt-8 md:mt-10 pt-6 border-t border-gray-100 dark:border-gray-800 mt-auto">
+                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
                   {!submitted ? (
                     <button 
                       onClick={handleSubmit} 
@@ -562,8 +564,8 @@ export function SmartPractice() {
         </div>
 
         {/* Right: AI Explanation / Hints */}
-        <div className="space-y-6 min-w-0">
-          <div className="card p-4 md:p-8 border border-gray-100 dark:border-gray-800 min-h-[400px] lg:min-h-[600px] flex flex-col">
+        <div className="min-w-0 lg:sticky lg:top-4 lg:h-[calc(100vh-80px)]">
+          <div className="card p-4 md:p-6 border border-gray-100 dark:border-gray-800 h-full flex flex-col overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center text-yellow-600 flex-shrink-0">

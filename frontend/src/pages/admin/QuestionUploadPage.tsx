@@ -7,10 +7,14 @@ import { Upload, FileText, CheckCircle, AlertTriangle, Edit3, Trash2, Search, Li
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Use CDN for the PDF worker to avoid Vite bundling issues
+// @ts-ignore - Vite specific import for PDF worker
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 }
+
+
 
 interface ParsedQuestion {
   id?: string;
@@ -32,9 +36,23 @@ export function QuestionUploadPage() {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [debugPdfText, setDebugPdfText] = useState('');
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     fetchCertifications();
+    
+    // Handle query parameters
+    const params = new URLSearchParams(window.location.search);
+    const paramMode = params.get('mode');
+    const paramCertId = params.get('certId');
+
+    if (paramMode === 'edit') {
+      setMode('edit');
+    }
+    if (paramCertId) {
+      setSelectedCertId(paramCertId);
+    }
   }, []);
 
   useEffect(() => {
@@ -127,33 +145,128 @@ export function QuestionUploadPage() {
   const extractQuestionsFromPDFText = (text: string): ParsedQuestion[] => {
     const questions: ParsedQuestion[] = [];
     
-    // Very basic regex logic: A number followed by a dot, then options A, B, C, D
-    // This is a naive implementation and might need tuning based on exact PDF formats
-    const blocks = text.split(/(?=\n\s*\d+\.\s+)/);
+    // Method 1: Look for the "Json to PDF" tabular format
+    if (text.includes('questionText options correctAnswer difficulty topic')) {
+      const headerPhrase = 'questionText options correctAnswer difficulty topic';
+      const blocks = text.split(headerPhrase).slice(1);
+
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+
+        const structureMatch = block.match(/^\s*(.*?)\s+\[Nested Data\]\s+([A-D])\s+(\w+)\s+(.*?)\s+A\s+B\s+C\s+D\s+(.*)/is);
+        
+        if (structureMatch) {
+          const qText = structureMatch[1].trim();
+          const correctAnswer = structureMatch[2].toUpperCase();
+          const difficulty = structureMatch[3].trim();
+          const topic = structureMatch[4].trim();
+          const rawOptions = structureMatch[5].trim();
+
+          const options: Record<string, string> = { A: '', B: '', C: '', D: '' };
+          const optParts = rawOptions.split(/\s{2,}/).filter(p => p.trim());
+          if (optParts.length >= 4) {
+            options.A = optParts[0].trim();
+            options.B = optParts[1].trim();
+            options.C = optParts[2].trim();
+            options.D = optParts[3].trim();
+          } else {
+            const simpleParts = rawOptions.split(/\s+/).filter(p => p.trim());
+            if (simpleParts.length >= 4) {
+              options.A = simpleParts[0].trim();
+              options.B = simpleParts[1].trim();
+              options.C = simpleParts[2].trim();
+              options.D = simpleParts[3].trim();
+            }
+          }
+
+          if (qText) {
+            questions.push({
+              questionText: qText,
+              options,
+              correctAnswer,
+              difficulty: difficulty.charAt(0).toUpperCase() + difficulty.slice(1),
+              topic
+            });
+          }
+        }
+      }
+    }
+
+    if (questions.length > 0) return questions;
+
+    // Method 2: Comprehensive Regex for various formats
+    // This looks for: 1. Question text OR (1) Question text OR Question 1: text
+    // Followed by options like A. Text OR (A) Text OR A) Text
     
-    for (const block of blocks) {
-      if (!block.trim()) continue;
+    // Split by question markers: "1.", "Question 1:", etc. at the start of a line or after whitespace
+    const questionBlocks = text.split(/(?=\n\s*(?:\d+[\.\)]|Question\s*\d+[:\.]|Q\d+[:\.]|^\d+\s+)\s+)/i);
+    
+    for (let block of questionBlocks) {
+      if (!block.trim() || block.length < 15) continue;
       
-      const qMatch = block.match(/^\s*\d+\.\s+(.*?)(?=\n\s*[A-D][\.\)]|$)/is);
-      const aMatch = block.match(/\n\s*A[\.\)]\s*(.*?)(?=\n\s*B[\.\)]|$)/is);
-      const bMatch = block.match(/\n\s*B[\.\)]\s*(.*?)(?=\n\s*C[\.\)]|$)/is);
-      const cMatch = block.match(/\n\s*C[\.\)]\s*(.*?)(?=\n\s*D[\.\)]|$)/is);
-      const dMatch = block.match(/\n\s*D[\.\)]\s*(.*?)(?=\n\s*(?:Answer|Correct)[\s:]|$)/is);
-      const ansMatch = block.match(/\n\s*(?:Answer|Correct)[\s:]*([A-D])/i);
+      // Try to extract question text
+      // Patterns: 1. <text>, (1) <text>, Question 1: <text>, Q1. <text>
+      const qMatch = block.match(/(?:\d+[\.\)]|Question\s*\d+[:\.]|Q\d+[:\.]|^)\s*(.*?)(?=\s*(?:\n|\s)[A-D][\.\)]|\s+(?:\([A-D]\)|[A-D]\))\s+|$)/is);
       
-      if (qMatch) {
-        questions.push({
-          questionText: qMatch[1].replace(/\n/g, ' ').trim(),
-          options: {
-            A: aMatch ? aMatch[1].replace(/\n/g, ' ').trim() : '',
-            B: bMatch ? bMatch[1].replace(/\n/g, ' ').trim() : '',
-            C: cMatch ? cMatch[1].replace(/\n/g, ' ').trim() : '',
-            D: dMatch ? dMatch[1].replace(/\n/g, ' ').trim() : ''
-          },
-          correctAnswer: ansMatch ? ansMatch[1].toUpperCase() : 'A',
-          difficulty: 'Medium',
-          topic: 'General'
-        });
+      if (qMatch && qMatch[1].trim()) {
+        const questionText = qMatch[1].replace(/\s+/g, ' ').trim();
+        
+        // Try to find options
+        const options: Record<string, string> = { A: '', B: '', C: '', D: '' };
+        
+        // Pattern variations: A. <text>, (A) <text>, A) <text>
+        const optPatterns = [
+          { key: 'A', regex: /(?:\n|\s|^)[(]?A[.\)]\s*(.*?)(?=(?:\n|\s)[(]?B[.\)]|$)/is },
+          { key: 'B', regex: /(?:\n|\s|^)[(]?B[.\)]\s*(.*?)(?=(?:\n|\s)[(]?C[.\)]|$)/is },
+          { key: 'C', regex: /(?:\n|\s|^)[(]?C[.\)]\s*(.*?)(?=(?:\n|\s)[(]?D[.\)]|$)/is },
+          { key: 'D', regex: /(?:\n|\s|^)[(]?D[.\)]\s*(.*?)(?=(?:\n|\s)(?:Answer|Correct|Explanation|Difficulty|Topic)[\s:]|$)/is }
+        ];
+
+        let foundOptions = 0;
+        for (const { key, regex } of optPatterns) {
+          const match = block.match(regex);
+          if (match && match[1].trim()) {
+            options[key] = match[1].replace(/\s+/g, ' ').trim();
+            foundOptions++;
+          }
+        }
+
+        // If standard regex didn't find much, try a simpler "split by letters" approach
+        if (foundOptions < 2) {
+          const simpleSplit = block.split(/\s+([A-D][\.\)\s])\s+/);
+          if (simpleSplit.length >= 8) { // ["question", "A.", "text", "B.", "text"...]
+            for (let i = 1; i < simpleSplit.length; i += 2) {
+              const keyToken = simpleSplit[i].trim();
+              const key = keyToken.charAt(keyToken.startsWith('(') ? 1 : 0).toUpperCase();
+              if (['A', 'B', 'C', 'D'].includes(key) && simpleSplit[i+1]) {
+                options[key] = simpleSplit[i+1].trim();
+                foundOptions++;
+              }
+            }
+          }
+        }
+
+        // Extract Answer
+        const ansMatch = block.match(/(?:Answer|Correct)(?:\s+is)?[\s:]*\s*([A-D])/i);
+        const correctAnswer = ansMatch ? ansMatch[1].toUpperCase() : 'A';
+
+        // Extract Difficulty
+        const diffMatch = block.match(/Difficulty[\s:]*\s*(Easy|Medium|Hard)/i);
+        const difficulty = diffMatch ? diffMatch[1] : 'Medium';
+
+        // Extract Topic
+        const topicMatch = block.match(/Topic[\s:]*\s*(.*?)(?:\n|$)/i);
+        const topic = topicMatch ? topicMatch[1].trim() : 'General';
+
+        if (questionText && foundOptions >= 2) {
+          questions.push({
+            questionText,
+            options,
+            correctAnswer,
+            difficulty: difficulty.charAt(0).toUpperCase() + difficulty.slice(1),
+            topic: topic || 'General'
+          });
+        }
       }
     }
     
@@ -210,9 +323,12 @@ export function QuestionUploadPage() {
           const strings = content.items.map((item: any) => item.str);
           text += strings.join(' ') + '\n';
         }
+        
+        console.log('Extracted PDF text sample:', text.substring(0, 500));
+        setDebugPdfText(text);
         const qs = extractQuestionsFromPDFText(text);
         if (qs.length === 0) {
-          setError('Could not automatically delineate questions from this PDF format. Please use Excel or JSON.');
+          setError('Could not automatically delineate questions from this PDF format.');
         } else {
           setParsedQuestions(qs);
         }
@@ -336,8 +452,26 @@ export function QuestionUploadPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
-          {error}
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
+            {debugPdfText && (
+              <button 
+                onClick={() => setShowDebug(!showDebug)}
+                className="text-xs font-semibold underline text-red-700 dark:text-red-400 hover:text-red-800"
+              >
+                {showDebug ? 'Hide Debug Info' : 'Show Extracted Text'}
+              </button>
+            )}
+          </div>
+          
+          {showDebug && debugPdfText && (
+            <div className="mt-4 p-3 bg-white dark:bg-gray-950 border border-red-100 dark:border-red-900 rounded overflow-x-auto max-h-96">
+              <p className="text-xs font-mono text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                {debugPdfText}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

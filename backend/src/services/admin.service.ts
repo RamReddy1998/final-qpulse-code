@@ -46,16 +46,24 @@ export class AdminService {
     const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
     const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
 
-    // Filter batches for current month and next month based on startTime
+    // Filter batches: Completed, Current Month (In Progress), and Next Month
+    const completedBatches = recentBatches.batches.filter((b) => {
+      if (!b.endTime) return false;
+      return new Date(b.endTime) < now;
+    });
+
     const currentMonthBatches = recentBatches.batches.filter((b) => {
       if (!b.startTime) return false;
       const st = new Date(b.startTime);
-      return st.getMonth() === currentMonth && st.getFullYear() === currentYear;
+      const et = b.endTime ? new Date(b.endTime) : null;
+      // Current if (started this month OR started before) AND (not ended yet)
+      return st <= now && (!et || et >= now);
     });
 
     const nextMonthBatches = recentBatches.batches.filter((b) => {
       if (!b.startTime) return false;
       const st = new Date(b.startTime);
+      // Next Month if starts in the specified next month
       return st.getMonth() === nextMonth && st.getFullYear() === nextMonthYear;
     });
 
@@ -64,6 +72,15 @@ export class AdminService {
       activeLearners,
       avgReadiness,
       totalMocks,
+      completedBatches: completedBatches.map((b) => ({
+        id: b.id,
+        batchName: b.batchName,
+        certificationName: b.certification.name,
+        participantCount: b._count?.participants || 0,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        createdAt: b.createdAt,
+      })),
       currentMonthBatches: currentMonthBatches.map((b) => ({
         id: b.id,
         batchName: b.batchName,
@@ -186,6 +203,32 @@ export class AdminService {
     return this.batchRepo.findAll(page, limit);
   }
 
+  async updateBatch(batchId: string, data: { batchName?: string; certificationId?: string; startTime?: string; endTime?: string }) {
+    const updateData: any = { ...data };
+    if (data.startTime) updateData.startTime = new Date(data.startTime);
+    if (data.endTime) updateData.endTime = new Date(data.endTime);
+
+    return this.batchRepo.update(batchId, updateData);
+  }
+
+  async deleteBatch(batchId: string) {
+    return this.batchRepo.delete(batchId);
+  }
+
+  async cleanupExpiredBatches() {
+    // Disabled automatic deletion as requested - batches now move to "Completed" section
+    /*
+    const expired = await this.batchRepo.findExpiredBatches(new Date());
+    if (expired.length > 0) {
+      const ids = expired.map((b) => b.id);
+      await this.batchRepo.deleteMany(ids);
+      logger.info(`Automatically deleted ${expired.length} expired batches`, { batchIds: ids });
+      return expired.length;
+    }
+    */
+    return 0;
+  }
+
   async getBatchDetails(batchId: string) {
     const batch = await this.batchRepo.findById(batchId);
     if (!batch) {
@@ -248,7 +291,7 @@ export class AdminService {
 
     // Try to find existing
     let cert = await this.certRepo.findByName(certificationName.trim());
-    
+
     // Create new if it doesn't exist
     if (!cert) {
       cert = await this.certRepo.create(certificationName.trim(), `${certificationName.trim()} Certification`);
@@ -348,5 +391,12 @@ export class AdminService {
     if (!question) throw new NotFoundError('Question not found');
 
     return this.questionRepo.deleteQuestion(questionId);
+  }
+
+  async deleteCertification(certificationId: string) {
+    const cert = await this.certRepo.findById(certificationId);
+    if (!cert) throw new NotFoundError('Certification not found');
+
+    return this.certRepo.delete(certificationId);
   }
 }

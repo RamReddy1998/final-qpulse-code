@@ -45,4 +45,10 @@ export class CertificationRepository {
       },
     });
   }
+
+  async delete(id: string) {
+    return prisma.certification.delete({
+      where: { id },
+    });
+  }
 }

@@ -119,22 +119,37 @@ export function MistakeAnalysis() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div 
           onClick={() => { setCurrentView('all'); setActiveDetail(null); }}
-          className={`card cursor-pointer transition-all ${currentView === 'all' && !activeDetail ? 'ring-2 ring-primary-500' : 'hover:shadow-md'}`}
+          className={`card group cursor-pointer transition-all duration-300 ${
+            currentView === 'all' && !activeDetail 
+              ? 'ring-2 ring-primary-500 bg-primary-50/10 dark:bg-primary-900/10' 
+              : 'hover:shadow-lg hover:scale-[1.02] hover:border-primary-300 dark:hover:border-primary-700'
+          }`}
         >
-          <div className="flex items-center gap-3">
-            <AlertTriangle className={`h-8 w-8 ${currentView === 'all' && !activeDetail ? 'text-primary-500' : 'text-red-500'}`} />
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">All Mistakes</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{total}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                currentView === 'all' && !activeDetail ? 'bg-primary-100 dark:bg-primary-900/40' : 'bg-red-50 dark:bg-red-900/20'
+              }`}>
+                <AlertTriangle className={`h-6 w-6 ${currentView === 'all' && !activeDetail ? 'text-primary-500' : 'text-red-500'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">All Mistakes</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{total}</p>
+              </div>
             </div>
+            <ChevronRight className={`h-5 w-5 transition-all group-hover:translate-x-1 ${
+              currentView === 'all' && !activeDetail ? 'text-primary-500' : 'text-gray-400 group-hover:text-primary-500'
+            }`} />
           </div>
         </div>
 
         <div className="card">
           <div className="flex items-center gap-3">
-            <RotateCcw className="h-8 w-8 text-orange-500" />
+            <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+              <RotateCcw className="h-6 w-6 text-orange-500" />
+            </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Repeated</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Repeated</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{repeatedMistakes}</p>
             </div>
           </div>
@@ -142,27 +157,53 @@ export function MistakeAnalysis() {
 
         <div 
           onClick={() => { setCurrentView('mock-tests'); setActiveDetail(null); }}
-          className={`card cursor-pointer transition-all ${currentView === 'mock-tests' && !activeDetail ? 'ring-2 ring-primary-500' : 'hover:shadow-md'}`}
+          className={`card group cursor-pointer transition-all duration-300 ${
+            currentView === 'mock-tests' && !activeDetail 
+              ? 'ring-2 ring-primary-500 bg-primary-50/10 dark:bg-primary-900/10' 
+              : 'hover:shadow-lg hover:scale-[1.02] hover:border-primary-300 dark:hover:border-primary-700'
+          }`}
         >
-          <div className="flex items-center gap-3">
-            <Target className={`h-8 w-8 ${currentView === 'mock-tests' && !activeDetail ? 'text-primary-500' : 'text-blue-500'}`} />
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Mock Tests</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{mockTests.length}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                currentView === 'mock-tests' && !activeDetail ? 'bg-primary-100 dark:bg-primary-900/40' : 'bg-blue-50 dark:bg-blue-900/20'
+              }`}>
+                <Target className={`h-6 w-6 ${currentView === 'mock-tests' && !activeDetail ? 'text-primary-500' : 'text-blue-500'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Mock Tests</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{mockTests.length}</p>
+              </div>
             </div>
+            <ChevronRight className={`h-5 w-5 transition-all group-hover:translate-x-1 ${
+              currentView === 'mock-tests' && !activeDetail ? 'text-primary-500' : 'text-gray-400 group-hover:text-primary-500'
+            }`} />
           </div>
         </div>
 
         <div 
           onClick={() => { setCurrentView('certifications'); setActiveDetail(null); }}
-          className={`card cursor-pointer transition-all ${currentView === 'certifications' && !activeDetail ? 'ring-2 ring-primary-500' : 'hover:shadow-md'}`}
+          className={`card group cursor-pointer transition-all duration-300 ${
+            currentView === 'certifications' && !activeDetail 
+              ? 'ring-2 ring-primary-500 bg-primary-50/10 dark:bg-primary-900/10' 
+              : 'hover:shadow-lg hover:scale-[1.02] hover:border-primary-300 dark:hover:border-primary-700'
+          }`}
         >
-          <div className="flex items-center gap-3">
-            <Award className={`h-8 w-8 ${currentView === 'certifications' && !activeDetail ? 'text-primary-500' : 'text-purple-500'}`} />
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Certifications</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{uniqueAttemptedCerts}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                currentView === 'certifications' && !activeDetail ? 'bg-primary-100 dark:bg-primary-900/40' : 'bg-purple-50 dark:bg-purple-900/20'
+              }`}>
+                <Award className={`h-6 w-6 ${currentView === 'certifications' && !activeDetail ? 'text-primary-500' : 'text-purple-500'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Certifications</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{uniqueAttemptedCerts}</p>
+              </div>
             </div>
+            <ChevronRight className={`h-5 w-5 transition-all group-hover:translate-x-1 ${
+              currentView === 'certifications' && !activeDetail ? 'text-primary-500' : 'text-gray-400 group-hover:text-primary-500'
+            }`} />
           </div>
         </div>
       </div>

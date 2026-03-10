@@ -53,6 +53,7 @@ export function DashboardLayout() {
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/learners', icon: Users, label: 'Learners' },
     { to: '/admin/batches', icon: Layers, label: 'Batch Management' },
+    { to: '/dashboard', icon: BookOpen, label: 'Certification View' },
     { to: '/admin/upload', icon: FileCheck, label: 'Upload Questions' },
     { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   ];

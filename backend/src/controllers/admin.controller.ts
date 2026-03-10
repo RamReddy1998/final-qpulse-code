@@ -58,6 +58,27 @@ export class AdminController {
     }
   }
 
+  static async updateBatch(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const batchId = req.params.batchId as string;
+      const data = req.body;
+      const updatedBatch = await adminService.updateBatch(batchId, data);
+      sendSuccess(res, updatedBatch, 'Batch updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteBatch(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const batchId = req.params.batchId as string;
+      await adminService.deleteBatch(batchId);
+      sendSuccess(res, { success: true }, 'Batch deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getBatchDetails(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const batchId = req.params.batchId as string;
@@ -163,6 +184,16 @@ export class AdminController {
       const questionId = req.params.questionId as string;
       await adminService.deleteQuestion(questionId);
       sendSuccess(res, { success: true }, 'Question deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteCertification(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const certificationId = req.params.certificationId as string;
+      await adminService.deleteCertification(certificationId);
+      sendSuccess(res, { success: true }, 'Certification deleted successfully');
     } catch (error) {
       next(error);
     }

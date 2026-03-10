@@ -27,6 +27,16 @@ export const adminService = {
     return res.data;
   },
 
+  async updateBatch(batchId: string, data: Partial<Batch>): Promise<Batch> {
+    const res = await api.put<ApiResponse<Batch>>(`/admin/batches/${batchId}`, data);
+    return res.data.data;
+  },
+
+  async deleteBatch(batchId: string): Promise<{ success: boolean }> {
+    const res = await api.delete<ApiResponse<{ success: boolean }>>(`/admin/batches/${batchId}`);
+    return res.data.data;
+  },
+
   async getBatchDetails(batchId: string): Promise<Batch> {
     const res = await api.get<ApiResponse<Batch>>(`/admin/batches/${batchId}`);
     return res.data.data;
@@ -82,6 +92,11 @@ export const adminService = {
 
   async deleteQuestion(questionId: string) {
     const res = await api.delete<ApiResponse<{ success: boolean }>>(`/admin/questions/${questionId}`);
+    return res.data.data;
+  },
+
+  async deleteCertification(certificationId: string) {
+    const res = await api.delete<ApiResponse<{ success: boolean }>>(`/admin/certifications/${certificationId}`);
     return res.data.data;
   },
 };
